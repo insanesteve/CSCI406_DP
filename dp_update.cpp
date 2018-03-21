@@ -13,6 +13,7 @@ struct Entry {
 	int stored;
 };
 Entry dpTable [15][6];
+//Entry dpTable [100][100];
 
 int orderGas(int* g, Config config, int gasStored, int day){
 
@@ -21,28 +22,23 @@ int orderGas(int* g, Config config, int gasStored, int day){
 
 	//base case for DP
 	if (dpTable[day][gasStored].cost != -1){
-		//cout << "Used table. Value: " << day << " " << gasStored << " " << dpTable[day][gasStored].cost << endl;
 		return dpTable[day][gasStored].cost + cost;
+		//return dpTable[day][gasStored].cost;
 	}
 
 	//base case - last day
 	if (day == config.n - 1){
 		//if the tank is not empty, return [ideally] inf, because it is an invalid cost
-		if ((gasStored - g[day]) > 0){
-			return 10000;
-		}
+		if ((g[day] - gasStored) < 0) return 10000;
+
 		//otherwise, return cost of ordered gas
 		//if we have exactly the right amount of gas
-		if ((gasStored - g[day]) == 0){
-			dpTable[day][gasStored].cost = cost;
-			dpTable[day][gasStored].stored = gasStored;
-			dpTable[day][gasStored].nextDay = -1;
-			return cost;
-		}
+		if ((g[day] - gasStored) == 0) return cost;
+
 		//otherwise, we'll need to order some gas
 		dpTable[day][gasStored].cost = cost + config.P;
-		dpTable[day][gasStored].stored = gasStored;
-		dpTable[day][gasStored].nextDay = -1;
+		dpTable[day][gasStored].stored = 0;
+		dpTable[day][gasStored].nextDay = day + 1;
 		return (cost + config.P);
 	}
 
@@ -64,16 +60,15 @@ int orderGas(int* g, Config config, int gasStored, int day){
 		
 		if (tempCost < minCost){
 			minCost = tempCost;
-			//dpTable[day][gasStored].cost = minCost;
-			//dpTable[day][gasStored].stored = gasStored + i - g[day];
-			//dpTable[day][gasStored].nextDay = day + 1;
-			
+			dpTable[day][gasStored].cost = minCost;
+			dpTable[day][gasStored].stored = gasStored + i - g[day];
+			dpTable[day][gasStored].nextDay = day + 1;
 		}
 	}
 
-	dpTable[day][gasStored].cost = minCost;
-	dpTable[day][gasStored].stored = gasStored - g[day];
-	dpTable[day][gasStored].nextDay = day + 1;
+	//dpTable[day][gasStored].cost = minCost;
+	//dpTable[day][gasStored].stored = gasStored - g[day];
+	//dpTable[day][gasStored].nextDay = day + 1;
 	//cout << "Current day: " << day << " Stored: " << gasStored << " Cost: " << cost << " MinCost: " << minCost << endl;
 	
 	return minCost;
@@ -89,10 +84,10 @@ int main(){
 	config.c = 4;
 	//g = gas needed for each of the reamining days
 	int g[] = {4,3,1,4,2,2,4,3,1,6,6,1,5,5,5};
-	//int g[] = {4,3,1,4,2,2,4,3};
+	//int g[] = {4,4,1};
 
-	for (int i = 0; i < 15; i++){
-		for (int j = 0; j < 6; j++){
+	for (int i = 0; i < 100; i++){
+		for (int j = 0; j < 100; j++){
 			dpTable[i][j].cost = -1;
 		}
 	}
@@ -103,26 +98,40 @@ int main(){
 	cout << orderGas(g, config, 0, 0) << endl;
 
 	
-	for (int i = 0; i < 15; i++){
+	/*for (int i = 0; i < 15; i++){
 		for (int j = 0; j < 6; j++){
-			cout << dpTable[i][j].nextDay << " ";
+			cout << dpTable[i][j].cost << "," << dpTable[i][j].stored << " ";
 		}
 		cout << endl;
+	}*/
+
+	
+	int currGalStored = 0;
+	for (int i = 0; i < config.n - 1; i++){
+		int nextGalStored = dpTable[i + 1][currGalStored].stored;
+		if (nextGalStored > (currGalStored - g[i])){
+			//we ordered gas
+			cout << "Day " << i + 1 << ": Ordered " << g[i] + nextGalStored - currGalStored << endl;
+		}
+		currGalStored = nextGalStored;
 	}
 
+	/*
 	int day = 0;
-	for (int gasStored = 0; i < config.L; i++){
-		int minCost = 1000;
-		for (int i = 0; i < config.L; i++){
-			if (dpTable[day][gasStored].cost != -1 && dpTable[day][gasStored].cost < minCost){
-				minCost = dpTable[day][gasStored].cost;
-			}
-		}
-		if (dpTable[day][gasStored].stored - g[day] > gasStored[dpTable[day][gasStored].nextDay][0]){
-			//we bought gas
-		}
+	int stored = 0;
+	vector < pair <int, int> > output;
+	while (day < config.n - 1){
+		int old = stored;
+		Entry newEntry = dpTable[day][stored];
+		day = newEntry.nextDay;
+		stored = newEntry.stored;
+		if (stored - old + g[day - 1] != 0)
+			output.push_back(make_pair(day, stored-old+g[day - 1]));
 	}
-
+	cout << output.size() << endl;
+	for (pair<int, int> p : output)
+		cout << p.first << " " << p.second << endl;
+	*/
 
 	return 0;
 }
