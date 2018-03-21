@@ -2,29 +2,36 @@
 #include <vector>
 using namespace std;
 
+//config struct to store the given values
 struct Config {
 	int n, L, P, c;
 	Config(){};
+	Config(int n, int L, int P, int c){
+		this -> n = n;this -> L = L; this -> P = P; this -> c = c;
+	}
 };
-
+//first we define all of the given constants in a new config
+static const Config config (15, 6, 17, 4);
+//g = gas needed for each of the reamining days
+static const int g[] = {4,3,1,4,2,2,4,3,1,6,6,1,5,5,5};
+//entry for the dpTable
 struct Entry {
 	int cost;
-	int nextDay;
 	int stored;
+	Entry(){cost = -1;}	
 };
-Entry dpTable [15][6];
-//Entry dpTable [100][100];
+//we need a dpTable that is n x L+1
+Entry dpTable [15][7];
 
-int orderGas(int* g, Config config, int gasStored, int day){
-
-	//initially, we add the night before's storage to the cost
-	int cost = gasStored*config.c;
+int orderGas(int gasStored, int day){
 
 	//base case for DP
 	if (dpTable[day][gasStored].cost != -1){
-		return dpTable[day][gasStored].cost + cost;
-		//return dpTable[day][gasStored].cost;
+		return dpTable[day][gasStored].cost;
 	}
+
+	//initially, we define the storage cost from the night before
+	int storageCost = gasStored*config.c;
 
 	//base case - last day
 	if (day == config.n - 1){
@@ -33,105 +40,53 @@ int orderGas(int* g, Config config, int gasStored, int day){
 
 		//otherwise, return cost of ordered gas
 		//if we have exactly the right amount of gas
-		if ((g[day] - gasStored) == 0) return cost;
+		if ((g[day] - gasStored) == 0) return storageCost;
 
 		//otherwise, we'll need to order some gas
-		dpTable[day][gasStored].cost = cost + config.P;
+		dpTable[day][gasStored].cost = storageCost + config.P;
 		dpTable[day][gasStored].stored = 0;
-		dpTable[day][gasStored].nextDay = day + 1;
-		return (cost + config.P);
+		return (storageCost + config.P);
 	}
 
-	
-	//then subtract the gas we need from the gas stored
+	//find out how much gas we need for the day, if we need less than zero gallons, the tank is empty
 	int gasNeeded = g[day] - gasStored;
-	if (gasNeeded > 0){
-		//we need to order gas on this day...pay for delivery
-		cost += config.P;
-		//cout << cost << endl;
-	}
-	else if (gasNeeded < 0) gasNeeded = 0;
-
+	if (gasNeeded < 0) gasNeeded = 0;
+	//initialize the minimum cost to a large number, [ideally] inf
 	int minCost = 10000;
-	//for 0 extra gallons to the maximum capacity, order gas for the day
+	//for 0 extra gallons to the maximum capacity, order gas for the day and make a recursive call 
 	for (int i = gasNeeded; i <= (config.L - gasStored + g[day]); i++){
-		int tempCost = orderGas(g, config, gasStored + i - g[day], day + 1);
-		tempCost += cost;
-		
+		//iff the gas we need is zero, we will not need to add a delivery cost at this stage
+		int deliveryCost;
+		i == 0 ? deliveryCost = 0 : deliveryCost = config.P;
+		//the cost can now be found with a recursive call
+		int tempCost = storageCost + deliveryCost + orderGas(gasStored + i - g[day], day + 1);
 		if (tempCost < minCost){
 			minCost = tempCost;
 			dpTable[day][gasStored].cost = minCost;
 			dpTable[day][gasStored].stored = gasStored + i - g[day];
-			dpTable[day][gasStored].nextDay = day + 1;
 		}
 	}
-
-	//dpTable[day][gasStored].cost = minCost;
-	//dpTable[day][gasStored].stored = gasStored - g[day];
-	//dpTable[day][gasStored].nextDay = day + 1;
-	//cout << "Current day: " << day << " Stored: " << gasStored << " Cost: " << cost << " MinCost: " << minCost << endl;
-	
 	return minCost;
 }
 
 int main(){
-	//first we define all of the given constants
-	Config config;
-	//fix this too
-	config.n = 15;
-	config.L = 6;
-	config.P = 17;
-	config.c = 4;
-	//g = gas needed for each of the reamining days
-	int g[] = {4,3,1,4,2,2,4,3,1,6,6,1,5,5,5};
-	//int g[] = {4,4,1};
-
-	for (int i = 0; i < 100; i++){
-		for (int j = 0; j < 100; j++){
-			dpTable[i][j].cost = -1;
-		}
+	//run the algorithm to find minCost
+	cout << orderGas(0, 0) << endl;
+	//run the traceback code to find the purchase days
+	//we need to store this in a vector due to the output reaquirements
+	int nextStored = 0;
+	vector <pair <int, int> > traceback;
+	for (int day = 0; day < (config.n - 1); day ++){
+		int currentStored = nextStored;
+		Entry newEntry = dpTable[day][nextStored];
+		nextStored = newEntry.stored;
+		if (nextStored - currentStored + g[day] != 0)
+			traceback.push_back(make_pair(day + 1, nextStored-currentStored+g[day]));
 	}
 
-	//initialize the dp table with -1 in every location
-	
-
-	cout << orderGas(g, config, 0, 0) << endl;
-
-	
-	/*for (int i = 0; i < 15; i++){
-		for (int j = 0; j < 6; j++){
-			cout << dpTable[i][j].cost << "," << dpTable[i][j].stored << " ";
-		}
-		cout << endl;
-	}*/
-
-	
-	int currGalStored = 0;
-	for (int i = 0; i < config.n - 1; i++){
-		int nextGalStored = dpTable[i + 1][currGalStored].stored;
-		if (nextGalStored > (currGalStored - g[i])){
-			//we ordered gas
-			cout << "Day " << i + 1 << ": Ordered " << g[i] + nextGalStored - currGalStored << endl;
-		}
-		currGalStored = nextGalStored;
-	}
-
-	/*
-	int day = 0;
-	int stored = 0;
-	vector < pair <int, int> > output;
-	while (day < config.n - 1){
-		int old = stored;
-		Entry newEntry = dpTable[day][stored];
-		day = newEntry.nextDay;
-		stored = newEntry.stored;
-		if (stored - old + g[day - 1] != 0)
-			output.push_back(make_pair(day, stored-old+g[day - 1]));
-	}
-	cout << output.size() << endl;
-	for (pair<int, int> p : output)
-		cout << p.first << " " << p.second << endl;
-	*/
+	cout << traceback.size() << endl;
+	for (pair<int, int> tbp : traceback)
+		cout << tbp.first << " " << tbp.second << endl;
 
 	return 0;
 }
