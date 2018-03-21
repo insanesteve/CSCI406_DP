@@ -82,8 +82,8 @@ int main(){
 		//then we get the amount in the tank on the next day
 		nextStored = dpTable[day][nextStored].stored;
 		//if the amount currently in the tank subtracted from the amount in the tank on the next day
-		//plus the amount required is not equal to zero, we must have filled the tank
-		if (nextStored - currentStored + g[day] != 0)
+		//plus the amount required is not equal to zero, we must have bought gas
+		if (nextStored - currentStored + g[day] != 0) 
 			traceback.push_back(make_pair(day + 1, nextStored-currentStored+g[day]));
 	}
 
