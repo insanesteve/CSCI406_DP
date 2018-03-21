@@ -16,12 +16,9 @@ Entry dpTable [100][100];
 
 int orderGas(int* g, Config config, int gasStored, int day){
 
-//cout << "Day: " << day << " Gas Stored: " << gasStored << endl;
-
+	//if (dpTable[day][gasStored].cost
 	//initially, we add the night before's storage to the cost
 	int cost = gasStored*config.c;
-	//cout << gasStored << "con " << config.c << endl;
-	//cout << "first: " << cost << endl;
 
 	//base case - last day
 	if (day == config.n - 1){
@@ -70,6 +67,12 @@ int main(){
 	//g = gas needed for each of the reamining days
 	//int g[] = {4,3,1,4,2,2,4,3,1,6,6,1,5,5,5};
 	int g[] = {4,3};
+
+	for (int i = 0; i < 100; i++){
+		for (int j = 0; j < 100; j++){
+			dpTable[i][j] = -1;
+		}
+	}
 
 	//initialize the dp table with -1 in every location
 	
